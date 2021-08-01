@@ -3,13 +3,18 @@
     <h2>
       Player <span v-if="isPlayerXTurn">X</span> <span v-else>O</span> Turn
     </h2>
+
     <div class="main">
       <div v-if="gameBoard" class="board">
-        <div v-for="x in 3" :key="x" class="column">
-          <div v-for="y in 3" :key="y">
-            <button type="button" @click="clickCell(x, y)" class="item">
-              {{ findLetter(x, y) }}
-            </button>
+        <div v-for="(item, index) in gameBoard" :key="index">
+          <div class="column">
+            <div>
+              <button type="button" @click="clickSquare(index)" class="item">
+                <span v-if="item.isX">X</span>
+                <span v-else-if="item.isX === false">O</span>
+                <span v-else></span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -56,46 +61,29 @@ export default {
           console.log(e);
         });
     },
-    clickCell(x, y) {
-      let index = this.findIndex(x, y);
-      console.log(index);
-      if (this.board[index].isX === null) {
+    clickSquare(index) {
+      const square = this.board[index];
+      if (square.isX === null) {
         const data = {
-          x: x,
-          y: y,
+          x: square.x,
+          y: square.y,
           isX: this.isPlayerXTurn,
           game_id: this.game_id,
-          id: this.board[index].id,
+          id: square.id,
         };
         axios
           .post("board/move", data)
-          .then(() => {
+          .then((response) => {
             this.isPlayerXTurn = !this.isPlayerXTurn;
-            this.loadGame();
+            const newSquare = response.data.data;
+            this.board.splice(index, 1, newSquare);
           })
           .catch((e) => {
             console.log(e);
           });
       }
     },
-    findLetter(x, y) {
-      if (this.gameBoard !== null) {
-        const index = this.findIndex(x, y);
-        if (index >= 0) {
-          console.log(index);
-          return this.board[index].isX === 1
-            ? "X"
-            : this.board[index].isX === 0
-            ? "O"
-            : "";
-        }
-      }
-    },
-    findIndex(x, y) {
-      return this.board.findIndex(
-        (element) => element.x === x && element.y === y
-      );
-    },
+    checkWinner() {},
   },
 };
 </script>
@@ -106,6 +94,7 @@ export default {
   width: 400px;
   height: 400px;
   display: flex;
+  flex-wrap: wrap;
 }
 .item {
   display: block;
