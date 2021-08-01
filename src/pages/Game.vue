@@ -13,6 +13,7 @@
                 <span v-if="item.isX">X</span>
                 <span v-else-if="item.isX === false">O</span>
                 <span v-else></span>
+                <small>x: {{ item.x }}; y: {{ item.y }}</small>
               </button>
             </div>
           </div>
@@ -103,6 +104,14 @@ export default {
   height: 125px;
   border: none;
   margin: 0.2rem;
+  position: relative;
+}
+.item > small {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  margin: 0.5rem;
+  font-size: 0.7rem;
 }
 .column {
   display: flex;
