@@ -20,8 +20,8 @@
         </div>
       </div>
       <h3>Game Logs:</h3>
-      <ul>
-        <li>log 1</li>
+      <ul v-for="(log, index) in gameLogs" :key="index">
+        <li>{{ log.log }}</li>
       </ul>
     </div>
   </div>
@@ -36,6 +36,7 @@ export default {
       board: [],
       uid: null,
       game_id: null,
+      logs: [],
       isPlayerXTurn: true,
     };
   },
@@ -45,6 +46,9 @@ export default {
   computed: {
     gameBoard() {
       return this.board;
+    },
+    gameLogs() {
+      return this.logs;
     },
   },
   methods: {
@@ -57,6 +61,7 @@ export default {
           this.board = data.squares;
           this.uid = data.uid;
           this.game_id = data.id;
+          this.logs = data.logs;
         })
         .catch((e) => {
           console.log(e);
