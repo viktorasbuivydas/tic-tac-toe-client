@@ -81,8 +81,10 @@ export default {
           .post("board/move", data)
           .then((response) => {
             this.isPlayerXTurn = !this.isPlayerXTurn;
-            const newSquare = response.data.data;
+            const newSquare = response.data.data.square;
+            const log = response.data.data.log;
             this.board.splice(index, 1, newSquare);
+            this.logs.push(log);
           })
           .catch((e) => {
             console.log(e);
