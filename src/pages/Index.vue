@@ -22,7 +22,7 @@ export default {
       axios
         .post("game/store")
         .then((response) => {
-          const uid = response.data;
+          const uid = response.data.data.uid;
           this.$router.push({ name: "Game" });
           localStorage.setItem("game_uid", uid);
         })

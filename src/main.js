@@ -5,7 +5,6 @@ import VueRouter from "vue-router";
 import axios from "axios";
 
 axios.defaults.baseURL = process.env.VUE_APP_API;
-console.log(process.env.VUE_APP_API);
 import App from "./App";
 
 // Import Bootstrap an BootstrapVue CSS files (order is important)

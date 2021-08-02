@@ -3,7 +3,6 @@
     <h2>
       Player <span v-if="isPlayerXTurn">X</span> <span v-else>O</span> Turn
     </h2>
-
     <div class="main">
       <div v-if="gameBoard" class="board">
         <div v-for="(item, index) in gameBoard" :key="index">
@@ -37,7 +36,7 @@ export default {
       uid: null,
       game_id: null,
       logs: [],
-      isPlayerXTurn: true,
+      isPlayerXTurn: null,
     };
   },
   created() {
@@ -61,6 +60,7 @@ export default {
           this.board = data.squares;
           this.uid = data.uid;
           this.game_id = data.id;
+          this.isPlayerXTurn = data.isPlayerXTurn;
           this.logs = data.logs;
         })
         .catch((e) => {
@@ -80,18 +80,74 @@ export default {
         axios
           .post("board/move", data)
           .then((response) => {
+            const data = response.data.data;
             this.isPlayerXTurn = !this.isPlayerXTurn;
-            const newSquare = response.data.data.square;
-            const log = response.data.data.log;
+            const newSquare = data.square;
+            const log = data.log;
             this.board.splice(index, 1, newSquare);
             this.logs.push(log);
+          })
+          .then(() => {
+            this.checkWinner(index);
           })
           .catch((e) => {
             console.log(e);
           });
       }
     },
-    checkWinner() {},
+    checkWinner(index) {
+      /* const rows = [
+        [0, 1, 2],
+        [3, 4, 5],
+        [6, 7, 8],
+      ];
+      const column = [
+        [0, 3, 6],
+        [1, 4, 7],
+        [2, 5, 8],
+      ];
+      const diagnol = [
+        [0, 4, 8],
+        [2, 4, 6],
+      ];
+      */
+      this.isWinnerMove([true], index);
+    },
+    isWinnerMove(isPlayerX, index) {
+      //var first = array[0];
+      const board = this.board;
+      const array = [
+        [0, 1, 2],
+        [3, 4, 5],
+        [6, 7, 8],
+        //columns
+        [0, 3, 6],
+        [1, 4, 7],
+        [2, 5, 8],
+        //diagnol
+        [0, 4, 8],
+        [2, 4, 6],
+      ];
+      console.log(isPlayerX);
+      //let winner = null;
+      let squareCount = 0;
+      for (let i = 0; i < array.length; i++) {
+        squareCount = 0;
+        for (let j = 0; j < array[i].length; j++) {
+          const mySquare = board[index].isX;
+          if (mySquare === board[array[i][j]].isX) {
+            squareCount++;
+          } else {
+            break;
+          }
+        }
+        if (squareCount === 3) {
+          console.log("win");
+          console.log(array[i]);
+          break;
+        }
+      }
+    },
   },
 };
 </script>
