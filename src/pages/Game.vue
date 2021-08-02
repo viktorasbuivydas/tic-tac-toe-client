@@ -1,29 +1,37 @@
 <template>
   <div>
-    <p><b-button variant="success" @click="restartGame">Restart</b-button></p>
-    <spinner size="medium" message="Loading..."></spinner>
-    <h2>
-      Player <span v-if="isPlayerXTurn">X</span> <span v-else>O</span> Turn
-    </h2>
-    <div class="main">
-      <div v-if="gameBoard" class="board">
-        <div v-for="(item, index) in gameBoard" :key="index">
-          <div class="column">
-            <div>
-              <button type="button" @click="clickSquare(index)" class="item">
-                <span v-if="item.isX">X</span>
-                <span v-else-if="item.isX === false">O</span>
-                <span v-else></span>
-                <small>x: {{ item.x }}; y: {{ item.y }}</small>
-              </button>
+    <div v-if="gameBoard">
+      <p><b-button variant="success" @click="restartGame">Restart</b-button></p>
+
+      <h2>
+        Player <span v-if="isPlayerXTurn">X</span> <span v-else>O</span> Turn
+      </h2>
+      <div class="main">
+        <div class="board">
+          <div v-for="(item, index) in gameBoard" :key="index">
+            <div class="column">
+              <div>
+                <button type="button" @click="clickSquare(index)" class="item">
+                  <span v-if="item.isX">X</span>
+                  <span v-else-if="item.isX === false">O</span>
+                  <span v-else></span>
+                  <small>x: {{ item.x }}; y: {{ item.y }}</small>
+                </button>
+              </div>
             </div>
           </div>
         </div>
+
+        <h3>Game Logs:</h3>
+        <div v-if="gameLogs">
+          <ul v-for="(log, index) in gameLogs" :key="index">
+            <li>{{ log.log }}</li>
+          </ul>
+        </div>
       </div>
-      <h3>Game Logs:</h3>
-      <ul v-for="(log, index) in gameLogs" :key="index">
-        <li>{{ log.log }}</li>
-      </ul>
+    </div>
+    <div v-else>
+      <spinner size="medium" message="Loading..."></spinner>
     </div>
   </div>
 </template>
