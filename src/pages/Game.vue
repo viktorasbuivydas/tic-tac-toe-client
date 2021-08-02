@@ -1,5 +1,7 @@
 <template>
   <div>
+    <p><b-button variant="success" @click="restartGame">Restart</b-button></p>
+    <spinner size="medium" message="Loading..."></spinner>
     <h2>
       Player <span v-if="isPlayerXTurn">X</span> <span v-else>O</span> Turn
     </h2>
@@ -28,8 +30,12 @@
 
 <script>
 import axios from "axios";
+import Spinner from "vue-simple-spinner";
 export default {
   name: "Index",
+  components: {
+    Spinner,
+  },
   data() {
     return {
       board: [],
@@ -96,21 +102,6 @@ export default {
       }
     },
     checkWinner(index) {
-      /* const rows = [
-        [0, 1, 2],
-        [3, 4, 5],
-        [6, 7, 8],
-      ];
-      const column = [
-        [0, 3, 6],
-        [1, 4, 7],
-        [2, 5, 8],
-      ];
-      const diagnol = [
-        [0, 4, 8],
-        [2, 4, 6],
-      ];
-      */
       this.isWinnerMove([true], index);
     },
     isWinnerMove(isPlayerX, index) {
@@ -147,6 +138,24 @@ export default {
           break;
         }
       }
+    },
+    restartGame() {
+      this.board = null;
+      this.logs = null;
+      localStorage.removeItem("game_uid");
+
+      axios
+        .post("game/store")
+        .then((response) => {
+          const uid = response.data.data.uid;
+          localStorage.setItem("game_uid", uid);
+        })
+        .then(() => {
+          this.loadGame();
+        })
+        .catch((e) => {
+          console.log(e);
+        });
     },
   },
 };
