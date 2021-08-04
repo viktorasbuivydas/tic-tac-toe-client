@@ -18,17 +18,13 @@ export default {
     this.alreadyInGame();
   },
   methods: {
-    startGame() {
-      axios
-        .post("game/store")
-        .then((response) => {
-          const uid = response.data.data.uid;
-          this.$router.push({ name: "Game" });
-          localStorage.setItem("game_uid", uid);
-        })
-        .catch((e) => {
-          console.log(e);
-        });
+    async startGame() {
+      let response = await axios.post("games");
+      const uid = response.data.data.uid;
+      let board = await axios.post("boards", { uid: uid });
+      this.board = board.data.data.board;
+      this.$router.push({ name: "Game" });
+      localStorage.setItem("game_uid", uid);
     },
     alreadyInGame() {
       const uid = localStorage.getItem("game_uid");

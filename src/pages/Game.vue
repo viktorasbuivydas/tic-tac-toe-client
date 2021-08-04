@@ -1,32 +1,43 @@
 <template>
   <div>
     <div v-if="gameBoard">
-      <p><b-button variant="success" @click="restartGame">Restart</b-button></p>
+      <div v-if="isFinished">
+        Game over
+      </div>
+      <div v-else>
+        <p>
+          <b-button variant="success" @click="restartGame">Restart</b-button>
+        </p>
 
-      <h2>
-        Player <span v-if="isPlayerXTurn">X</span> <span v-else>O</span> Turn
-      </h2>
-      <div class="main">
-        <div class="board">
-          <div v-for="(item, index) in gameBoard" :key="index">
-            <div class="column">
-              <div>
-                <button type="button" @click="clickSquare(index)" class="item">
-                  <span v-if="item.isX">X</span>
-                  <span v-else-if="item.isX === false">O</span>
-                  <span v-else></span>
-                  <small>x: {{ item.x }}; y: {{ item.y }}</small>
-                </button>
+        <h2>
+          Player <span v-if="isPlayerXTurn">X</span> <span v-else>O</span> Turn
+        </h2>
+        <div class="main">
+          <div class="board">
+            <div v-for="(item, index) in gameBoard" :key="index">
+              <div class="column">
+                <div>
+                  <button
+                    type="button"
+                    @click="clickSquare(index)"
+                    class="item"
+                  >
+                    <span v-if="item.isX">X</span>
+                    <span v-else-if="item.isX === false">O</span>
+                    <span v-else></span>
+                    <small>x: {{ item.x }}; y: {{ item.y }}</small>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <h3>Game Logs:</h3>
-        <div v-if="gameLogs">
-          <ul v-for="(log, index) in gameLogs" :key="index">
-            <li>{{ log.log }}</li>
-          </ul>
+          <h3>Game Logs:</h3>
+          <div v-if="gameLogs.length > 0">
+            <ul v-for="(log, index) in gameLogs" :key="index">
+              <li>{{ log.log }}</li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
@@ -51,6 +62,7 @@ export default {
       game_id: null,
       logs: [],
       isPlayerXTurn: null,
+      isFinished: false,
     };
   },
   created() {
@@ -67,93 +79,65 @@ export default {
   methods: {
     loadGame() {
       const uid = localStorage.getItem("game_uid");
-      axios
-        .get("game/" + uid)
+      const self = this;
+      Promise.all([
+        this.getGame(uid, self),
+        this.getBoard(uid, self),
+        this.getLogs(uid, self),
+      ])
         .then((response) => {
-          const data = response.data.data;
-          this.board = data.squares;
-          this.uid = data.uid;
-          this.game_id = data.id;
-          this.isPlayerXTurn = data.isPlayerXTurn;
-          this.logs = data.logs;
+          const game = response[0].data.data;
+          this.uid = game.uid;
+          this.isPlayerXTurn = game.isPlayerXTurn;
+          this.isFinished = game.isFinished;
+          this.board = response[1].data.data;
+          this.logs = response[2].data.data;
         })
         .catch((e) => {
           console.log(e);
         });
     },
-    clickSquare(index) {
+    async clickSquare(index) {
       const square = this.board[index];
       if (square.isX === null) {
         const data = {
-          x: square.x,
-          y: square.y,
           isX: this.isPlayerXTurn,
-          game_id: this.game_id,
-          id: square.id,
+          square_id: square.id,
+          square_index: index,
+          uid: this.uid,
         };
-        axios
-          .post("board/move", data)
-          .then((response) => {
-            const data = response.data.data;
-            this.isPlayerXTurn = !this.isPlayerXTurn;
-            const newSquare = data.square;
-            const log = data.log;
-            this.board.splice(index, 1, newSquare);
-            this.logs.push(log);
-          })
-          .then(() => {
-            this.checkWinner(index);
-          })
-          .catch((e) => {
-            console.log(e);
-          });
+        let board = await axios.put("boards/" + this.uid, data);
+        const newSquare = board.data.data;
+        this.isPlayerXTurn = !this.isPlayerXTurn;
+        this.board.splice(index, 1, newSquare);
+        const square_data = {
+          isX: this.isPlayerXTurn,
+          game_uid: this.uid,
+          x: newSquare.x,
+          y: newSquare.y,
+        };
+        await axios.post("actions", square_data);
+        const logs = await axios.post("logs", square_data);
+        this.logs = logs.data.log;
+        //this.checkWinner(index);
       }
     },
-    checkWinner(index) {
-      this.isWinnerMove([true], index);
+    getGame(uid) {
+      return axios.get("games/" + uid);
     },
-    isWinnerMove(isPlayerX, index) {
-      //var first = array[0];
-      const board = this.board;
-      const array = [
-        [0, 1, 2],
-        [3, 4, 5],
-        [6, 7, 8],
-        //columns
-        [0, 3, 6],
-        [1, 4, 7],
-        [2, 5, 8],
-        //diagnol
-        [0, 4, 8],
-        [2, 4, 6],
-      ];
-      console.log(isPlayerX);
-      //let winner = null;
-      let squareCount = 0;
-      for (let i = 0; i < array.length; i++) {
-        squareCount = 0;
-        for (let j = 0; j < array[i].length; j++) {
-          const mySquare = board[index].isX;
-          if (mySquare === board[array[i][j]].isX) {
-            squareCount++;
-          } else {
-            break;
-          }
-        }
-        if (squareCount === 3) {
-          console.log("win");
-          console.log(array[i]);
-          break;
-        }
-      }
+    getBoard(uid) {
+      return axios.get("boards/" + uid);
     },
+    getLogs(uid) {
+      return axios.get("logs/" + uid);
+    },
+    getActions() {},
     restartGame() {
       this.board = null;
       this.logs = null;
       localStorage.removeItem("game_uid");
-
       axios
-        .post("game/store")
+        .post("games")
         .then((response) => {
           const uid = response.data.data.uid;
           localStorage.setItem("game_uid", uid);
