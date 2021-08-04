@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-if="gameBoard">
+    <div>
       <div v-if="isFinished">
         Game over
       </div>
@@ -13,7 +13,10 @@
           Player <span v-if="isPlayerXTurn">X</span> <span v-else>O</span> Turn
         </h2>
         <div class="main">
-          <div class="board">
+          <div v-if="gameBoard == null && isLoading">
+            <spinner size="medium" message="Loading..."></spinner>
+          </div>
+          <div class="board" v-else>
             <div v-for="(item, index) in gameBoard" :key="index">
               <div class="column">
                 <div>
@@ -31,18 +34,19 @@
               </div>
             </div>
           </div>
-
           <h3>Game Logs:</h3>
-          <div v-if="gameLogs.length > 0">
-            <ul v-for="(log, index) in gameLogs" :key="index">
-              <li>{{ log.log }}</li>
-            </ul>
+          <div v-if="isLoading">
+            <spinner size="medium" message="Loading..."></spinner>
+          </div>
+          <div v-else>
+            <div v-if="gameLogs.length > 0">
+              <ul v-for="(log, index) in gameLogs" :key="index">
+                <li>{{ log.log }}</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    <div v-else>
-      <spinner size="medium" message="Loading..."></spinner>
     </div>
   </div>
 </template>
@@ -57,12 +61,13 @@ export default {
   },
   data() {
     return {
-      board: [],
+      board: null,
       uid: null,
       game_id: null,
       logs: [],
       isPlayerXTurn: null,
       isFinished: false,
+      isLoading: true,
     };
   },
   created() {
@@ -80,6 +85,7 @@ export default {
     loadGame() {
       const uid = localStorage.getItem("game_uid");
       const self = this;
+      this.isLoading = true;
       Promise.all([
         this.getGame(uid, self),
         this.getBoard(uid, self),
@@ -92,12 +98,15 @@ export default {
           this.isFinished = game.isFinished;
           this.board = response[1].data.data;
           this.logs = response[2].data.data;
+          this.isLoading = false;
         })
         .catch((e) => {
           console.log(e);
+          this.isLoading = false;
         });
     },
     async clickSquare(index) {
+      this.isLoading = true;
       const square = this.board[index];
       if (square.isX === null) {
         const data = {
@@ -123,8 +132,7 @@ export default {
         });
         this.logs.push(logs.data.data);
         this.isPlayerXTurn = !this.isPlayerXTurn;
-
-        //this.checkWinner(index);
+        this.isLoading = false;
       }
     },
     getGame(uid) {
@@ -136,23 +144,17 @@ export default {
     getLogs(uid) {
       return axios.get("logs/" + uid);
     },
-    getActions() {},
-    restartGame() {
+    async restartGame() {
       this.board = null;
       this.logs = null;
+      this.isLoading = true;
       localStorage.removeItem("game_uid");
-      axios
-        .post("games")
-        .then((response) => {
-          const uid = response.data.data.uid;
-          localStorage.setItem("game_uid", uid);
-        })
-        .then(() => {
-          this.loadGame();
-        })
-        .catch((e) => {
-          console.log(e);
-        });
+      let response = await axios.post("games");
+      const uid = response.data.data.uid;
+      localStorage.setItem("game_uid", uid);
+      let board = await axios.post("boards", { uid: uid });
+      this.board = board.data.data.board;
+      this.loadGame();
     },
   },
 };
