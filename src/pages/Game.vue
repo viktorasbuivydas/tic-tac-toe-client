@@ -107,18 +107,23 @@ export default {
           uid: this.uid,
         };
         let board = await axios.put("boards/" + this.uid, data);
-        const newSquare = board.data.data;
-        this.isPlayerXTurn = !this.isPlayerXTurn;
+        const newSquare = board.data.data.square;
         this.board.splice(index, 1, newSquare);
-        const square_data = {
+
+        await axios.post("actions", {
+          isX: this.isPlayerXTurn,
+          game_uid: this.uid,
+        });
+
+        const logs = await axios.post("logs", {
           isX: this.isPlayerXTurn,
           game_uid: this.uid,
           x: newSquare.x,
           y: newSquare.y,
-        };
-        await axios.post("actions", square_data);
-        const logs = await axios.post("logs", square_data);
-        this.logs = logs.data.log;
+        });
+        this.logs.push(logs.data.data);
+        this.isPlayerXTurn = !this.isPlayerXTurn;
+
         //this.checkWinner(index);
       }
     },
