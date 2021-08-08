@@ -1,20 +1,18 @@
 <template>
   <div>
     <div>
-      <div v-if="isFinished">
-        Game over
-      </div>
-      <div v-else>
+      <div>
         <p>
           <b-button variant="success" @click="restartGame">Restart</b-button>
         </p>
 
         <h2>
-          Player <span v-if="isPlayerXTurn">X</span> <span v-else>O</span> Turn
+          Player <span v-if="is_player_x_turn">X</span>
+          <span v-else>O</span> Turn
         </h2>
         <div class="main">
           <div>
-            <div v-if="gameBoard === null && isLoading === true">
+            <div v-if="gameBoard === null && is_loading === true">
               <spinner size="medium" message="Loading..." />
             </div>
             <div v-else class="board">
@@ -26,8 +24,8 @@
                       @click="clickSquare(index)"
                       class="item"
                     >
-                      <span v-if="item.isX">X</span>
-                      <span v-else-if="item.isX === false">O</span>
+                      <span v-if="item.is_x">X</span>
+                      <span v-else-if="item.is_x === false">O</span>
                       <span v-else></span>
                       <small>x: {{ item.x }}; y: {{ item.y }}</small>
                     </button>
@@ -37,7 +35,7 @@
             </div>
           </div>
           <h3>Game Logs:</h3>
-          <div v-if="isLoading">
+          <div v-if="is_loading">
             <spinner size="medium" message="Loading..."></spinner>
           </div>
           <div v-else>
@@ -68,9 +66,10 @@ export default {
       game_uid: null,
       game_id: null,
       logs: [],
-      isPlayerXTurn: null,
-      isFinished: false,
-      isLoading: true,
+      is_Player_x_turn: null,
+      is_finished: false,
+      is_loading: true,
+      winning_moves: [],
     };
   },
   created() {
@@ -86,14 +85,15 @@ export default {
   },
   methods: {
     loadGame() {
+      this.checkWin();
       this.game_uid = localStorage.getItem("game_uid");
-      this.isLoading = true;
+      this.is_loading = true;
       this.getGame(this.game_uid)
         .then((response) => {
           const data = response.data.data;
           this.game_uid = data.game_uid;
-          this.isPlayerXTurn = data.isPlayerXTurn;
-          this.isFinished = data.isFinished;
+          this.is_player_x_turn = data.is_player_x_turn;
+          this.is_finished = data.is_finished;
         })
         .then(() => {
           axios
@@ -112,7 +112,7 @@ export default {
           localStorage.removeItem("game_uid");
           this.$router.push({ name: "Index" });
         });
-      this.isLoading = false;
+      this.is_loading = false;
     },
 
     getGame(uid) {
@@ -124,24 +124,12 @@ export default {
     getLogs(uid) {
       return axios.get("logs/" + uid);
     },
-    async restartGame() {
-      this.board = null;
-      this.logs = null;
-      this.isLoading = true;
-      localStorage.removeItem("game_uid");
-      let response = await axios.post("games");
-      const game_uid = response.data.data.game_uid;
-      localStorage.setItem("game_uid", game_uid);
-      let board = await axios.post("boards", { game_uid: game_uid });
-      this.board = board.data.data.board;
-      this.loadGame();
-    },
     async clickSquare(index) {
-      this.isLoading = true;
+      this.is_loading = true;
       const square = this.board[index];
       if (square.isX === null) {
         const data = {
-          isX: this.isPlayerXTurn,
+          isX: this.is_player_x_turn,
           square_id: square.id,
           square_index: index,
           game_uid: this.game_uid,
@@ -151,20 +139,44 @@ export default {
         this.board.splice(index, 1, newSquare);
 
         await axios.post("actions", {
-          isX: this.isPlayerXTurn,
+          isX: this.is_player_x_turn,
           game_uid: this.game_uid,
         });
 
         const logs = await axios.post("logs", {
-          isX: this.isPlayerXTurn,
+          isX: this.is_player_x_turn,
           game_uid: this.game_uid,
           x: newSquare.x,
           y: newSquare.y,
         });
         this.logs.push(logs.data.data);
-        this.isPlayerXTurn = !this.isPlayerXTurn;
-        this.isLoading = false;
+        this.is_player_x_turn = !this.is_player_x_turn;
+        this.is_loading = false;
       }
+      this.checkWin();
+    },
+
+    async restartGame() {
+      this.board = null;
+      this.logs = null;
+      this.is_loading = true;
+      localStorage.removeItem("game_uid");
+      let response = await axios.post("games");
+      const game_uid = response.data.data.game_uid;
+      localStorage.setItem("game_uid", game_uid);
+      let board = await axios.post("boards", { game_uid: game_uid });
+      this.board = board.data.data.board;
+      this.loadGame();
+    },
+    checkWin() {
+      axios
+        .put("games/" + this.game_uid)
+        .then((response) => {
+          console.log(response);
+        })
+        .catch((e) => {
+          console.log(e);
+        });
     },
   },
 };
