@@ -13,27 +13,7 @@
           Player <span v-if="isPlayerXTurn">X</span> <span v-else>O</span> Turn
         </h2>
         <div class="main">
-          <div v-if="gameBoard == null && isLoading">
-            <spinner size="medium" message="Loading..."></spinner>
-          </div>
-          <div class="board" v-else>
-            <div v-for="(item, index) in gameBoard" :key="index">
-              <div class="column">
-                <div>
-                  <button
-                    type="button"
-                    @click="clickSquare(index)"
-                    class="item"
-                  >
-                    <span v-if="item.isX">X</span>
-                    <span v-else-if="item.isX === false">O</span>
-                    <span v-else></span>
-                    <small>x: {{ item.x }}; y: {{ item.y }}</small>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <board />
           <h3>Game Logs:</h3>
           <div v-if="isLoading">
             <spinner size="medium" message="Loading..."></spinner>
@@ -53,11 +33,11 @@
 
 <script>
 import axios from "axios";
-import Spinner from "vue-simple-spinner";
+import Board from "../components/Board.vue";
 export default {
   name: "Index",
   components: {
-    Spinner,
+    Board,
   },
   data() {
     return {
@@ -83,11 +63,12 @@ export default {
   },
   methods: {
     loadGame() {
-      const uid = localStorage.getItem("game_uid");
-      const self = this;
-      this.isLoading = true;
-      Promise.all([
-        this.getGame(uid, self),
+      this.$store.dispatch("game/loadGame");
+      this.$store.dispatch("board/loadGameBoard");
+      this.$store.dispatch("logs/loadGameLogs");
+
+      /*Promise.all([
+        // this.getGame(uid, self),
         this.getBoard(uid, self),
         this.getLogs(uid, self),
       ])
@@ -104,6 +85,7 @@ export default {
           console.log(e);
           this.isLoading = false;
         });
+        */
     },
     async clickSquare(index) {
       this.isLoading = true;

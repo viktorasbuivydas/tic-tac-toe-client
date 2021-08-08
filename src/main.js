@@ -3,10 +3,10 @@ require("dotenv").config();
 import { BootstrapVue, IconsPlugin } from "bootstrap-vue";
 import VueRouter from "vue-router";
 import axios from "axios";
+import store from "./store";
 
 axios.defaults.baseURL = process.env.VUE_APP_API;
 import App from "./App";
-
 // Import Bootstrap an BootstrapVue CSS files (order is important)
 import "bootstrap/dist/css/bootstrap.css";
 import "bootstrap-vue/dist/bootstrap-vue.css";
@@ -29,7 +29,9 @@ const router = new VueRouter({
   ],
   mode: "history",
 });
+
 new Vue({
   render: (h) => h(App),
+  store,
   router,
 }).$mount("#app");

@@ -6,7 +6,6 @@
 </template>
 
 <script>
-import axios from "axios";
 export default {
   name: "Index",
   data() {
@@ -19,26 +18,12 @@ export default {
   },
   methods: {
     async startGame() {
-      let response = await axios.post("games");
-      const uid = response.data.data.uid;
-      let board = await axios.post("boards", { uid: uid });
-      this.board = board.data.data.board;
-      this.$router.push({ name: "Game" });
-      localStorage.setItem("game_uid", uid);
+      this.$store.dispatch("game/startGame").then(() => {
+        this.$store.dispatch("board/createGameBoard");
+      });
     },
     alreadyInGame() {
-      const uid = localStorage.getItem("game_uid");
-      if (uid !== null) {
-        axios
-          .get("game/" + uid)
-          .then(() => {
-            this.$router.push({ name: "Game" });
-          })
-          .catch((e) => {
-            console.log(e);
-            localStorage.removeItem("game_uid");
-          });
-      }
+      this.$store.dispatch("game/loadGame");
     },
   },
 };
