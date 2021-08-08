@@ -3,7 +3,6 @@ require("dotenv").config();
 import { BootstrapVue, IconsPlugin } from "bootstrap-vue";
 import VueRouter from "vue-router";
 import axios from "axios";
-import store from "./store";
 
 axios.defaults.baseURL = process.env.VUE_APP_API;
 import App from "./App";
@@ -32,6 +31,5 @@ const router = new VueRouter({
 
 new Vue({
   render: (h) => h(App),
-  store,
   router,
 }).$mount("#app");

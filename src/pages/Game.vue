@@ -13,7 +13,29 @@
           Player <span v-if="isPlayerXTurn">X</span> <span v-else>O</span> Turn
         </h2>
         <div class="main">
-          <board />
+          <div>
+            <div v-if="gameBoard === null && isLoading === true">
+              <spinner size="medium" message="Loading..." />
+            </div>
+            <div v-else class="board">
+              <div v-for="(item, index) in gameBoard" :key="index">
+                <div class="column">
+                  <div>
+                    <button
+                      type="button"
+                      @click="clickSquare(index)"
+                      class="item"
+                    >
+                      <span v-if="item.isX">X</span>
+                      <span v-else-if="item.isX === false">O</span>
+                      <span v-else></span>
+                      <small>x: {{ item.x }}; y: {{ item.y }}</small>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
           <h3>Game Logs:</h3>
           <div v-if="isLoading">
             <spinner size="medium" message="Loading..."></spinner>
@@ -33,16 +55,17 @@
 
 <script>
 import axios from "axios";
-import Board from "../components/Board.vue";
+import Spinner from "vue-simple-spinner";
+
 export default {
   name: "Index",
   components: {
-    Board,
+    Spinner,
   },
   data() {
     return {
       board: null,
-      uid: null,
+      game_uid: null,
       game_id: null,
       logs: [],
       isPlayerXTurn: null,
@@ -63,60 +86,35 @@ export default {
   },
   methods: {
     loadGame() {
-      this.$store.dispatch("game/loadGame");
-      this.$store.dispatch("board/loadGameBoard");
-      this.$store.dispatch("logs/loadGameLogs");
-
-      /*Promise.all([
-        // this.getGame(uid, self),
-        this.getBoard(uid, self),
-        this.getLogs(uid, self),
-      ])
+      this.game_uid = localStorage.getItem("game_uid");
+      this.isLoading = true;
+      this.getGame(this.game_uid)
         .then((response) => {
-          const game = response[0].data.data;
-          this.uid = game.uid;
-          this.isPlayerXTurn = game.isPlayerXTurn;
-          this.isFinished = game.isFinished;
-          this.board = response[1].data.data;
-          this.logs = response[2].data.data;
-          this.isLoading = false;
+          const data = response.data.data;
+          this.game_uid = data.game_uid;
+          this.isPlayerXTurn = data.isPlayerXTurn;
+          this.isFinished = data.isFinished;
+        })
+        .then(() => {
+          axios
+            .get("boards/" + this.game_uid)
+            .then((response) => {
+              this.board = response.data.data;
+            })
+            .then(() => {
+              axios.get("logs/" + this.game_uid).then((response) => {
+                this.logs = response.data.data;
+              });
+            });
         })
         .catch((e) => {
           console.log(e);
-          this.isLoading = false;
+          localStorage.removeItem("game_uid");
+          this.$router.push({ name: "Index" });
         });
-        */
+      this.isLoading = false;
     },
-    async clickSquare(index) {
-      this.isLoading = true;
-      const square = this.board[index];
-      if (square.isX === null) {
-        const data = {
-          isX: this.isPlayerXTurn,
-          square_id: square.id,
-          square_index: index,
-          uid: this.uid,
-        };
-        let board = await axios.put("boards/" + this.uid, data);
-        const newSquare = board.data.data.square;
-        this.board.splice(index, 1, newSquare);
 
-        await axios.post("actions", {
-          isX: this.isPlayerXTurn,
-          game_uid: this.uid,
-        });
-
-        const logs = await axios.post("logs", {
-          isX: this.isPlayerXTurn,
-          game_uid: this.uid,
-          x: newSquare.x,
-          y: newSquare.y,
-        });
-        this.logs.push(logs.data.data);
-        this.isPlayerXTurn = !this.isPlayerXTurn;
-        this.isLoading = false;
-      }
-    },
     getGame(uid) {
       return axios.get("games/" + uid);
     },
@@ -132,11 +130,41 @@ export default {
       this.isLoading = true;
       localStorage.removeItem("game_uid");
       let response = await axios.post("games");
-      const uid = response.data.data.uid;
-      localStorage.setItem("game_uid", uid);
-      let board = await axios.post("boards", { uid: uid });
+      const game_uid = response.data.data.game_uid;
+      localStorage.setItem("game_uid", game_uid);
+      let board = await axios.post("boards", { game_uid: game_uid });
       this.board = board.data.data.board;
       this.loadGame();
+    },
+    async clickSquare(index) {
+      this.isLoading = true;
+      const square = this.board[index];
+      if (square.isX === null) {
+        const data = {
+          isX: this.isPlayerXTurn,
+          square_id: square.id,
+          square_index: index,
+          game_uid: this.game_uid,
+        };
+        let board = await axios.put("boards/" + this.game_uid, data);
+        const newSquare = board.data.data;
+        this.board.splice(index, 1, newSquare);
+
+        await axios.post("actions", {
+          isX: this.isPlayerXTurn,
+          game_uid: this.game_uid,
+        });
+
+        const logs = await axios.post("logs", {
+          isX: this.isPlayerXTurn,
+          game_uid: this.game_uid,
+          x: newSquare.x,
+          y: newSquare.y,
+        });
+        this.logs.push(logs.data.data);
+        this.isPlayerXTurn = !this.isPlayerXTurn;
+        this.isLoading = false;
+      }
     },
   },
 };

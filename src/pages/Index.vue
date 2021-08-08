@@ -1,29 +1,50 @@
 <template>
   <div>
     <h2>Tic-Tac-Toe Game</h2>
-    <b-button variant="success" @click="startGame">Start</b-button>
+    <b-button variant="success" @click="newGame">Start</b-button>
   </div>
 </template>
 
 <script>
+import axios from "axios";
+
 export default {
   name: "Index",
   data() {
     return {
-      uid: null,
+      game_uid: null,
     };
   },
   created() {
-    this.alreadyInGame();
+    this.checkGame();
   },
   methods: {
-    async startGame() {
-      this.$store.dispatch("game/startGame").then(() => {
-        this.$store.dispatch("board/createGameBoard");
-      });
+    newGame() {
+      axios
+        .post("games")
+        .then((response) => {
+          this.game_uid = response.data.data.game_uid;
+        })
+        .then(() => {
+          axios.post("boards", { game_uid: this.game_uid });
+          localStorage.setItem("game_uid", this.game_uid);
+          this.$router.push({ name: "Game" });
+        })
+        .catch((e) => {
+          console.log(e);
+          localStorage.removeItem("game_uid");
+        });
     },
-    alreadyInGame() {
-      this.$store.dispatch("game/loadGame");
+
+    checkGame() {
+      axios
+        .get("boards/" + this.game_uid)
+        .then(() => {
+          this.$router.push({ name: "Game" });
+        })
+        .catch(() => {
+          localStorage.removeItem("game_uid");
+        });
     },
   },
 };
