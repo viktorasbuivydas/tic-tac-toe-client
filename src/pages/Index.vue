@@ -2,6 +2,9 @@
   <div>
     <h2>Tic-Tac-Toe Game</h2>
     <b-button variant="success" @click="newGame">Start</b-button>
+    <div class="my-3">
+      <h2>Seeded games</h2>
+    </div>
   </div>
 </template>
 
@@ -14,9 +17,6 @@ export default {
     return {
       game_uid: null,
     };
-  },
-  created() {
-    this.checkGame();
   },
   methods: {
     newGame() {
@@ -32,17 +32,6 @@ export default {
         })
         .catch((e) => {
           console.log(e);
-          localStorage.removeItem("game_uid");
-        });
-    },
-
-    checkGame() {
-      axios
-        .get("boards/" + this.game_uid)
-        .then(() => {
-          this.$router.push({ name: "Game" });
-        })
-        .catch(() => {
           localStorage.removeItem("game_uid");
         });
     },
