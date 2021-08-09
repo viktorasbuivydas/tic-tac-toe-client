@@ -167,6 +167,8 @@ export default {
           this.checkWin();
 
           await axios.post("actions", {
+            x: newSquare.x,
+            y: newSquare.y,
             is_x: this.isPlayerXTurn,
             game_uid: this.game_uid,
           });
